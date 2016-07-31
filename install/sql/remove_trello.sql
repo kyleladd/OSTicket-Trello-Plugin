@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS `%TABLE_PREFIX%trello_config`$

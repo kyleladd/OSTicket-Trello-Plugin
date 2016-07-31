@@ -1,0 +1,12 @@
+SET SQL_SAFE_UPDATES=0$
+
+CREATE TABLE IF NOT EXISTS `%TABLE_PREFIX%trello_config` (
+`id` int(11) NOT NULL AUTO_INCREMENT,
+`key` varchar(255) NOT NULL DEFAULT 'undefined',
+`value` varchar(255) NOT NULL DEFAULT 'undefined',
+PRIMARY KEY (`id`),
+UNIQUE KEY `key_UNIQUE` (`key`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8$
+
+
+SET SQL_SAFE_UPDATES=1$	
