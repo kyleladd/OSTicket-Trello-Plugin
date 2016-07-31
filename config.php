@@ -4,9 +4,35 @@ require_once(INCLUDE_DIR.'/class.plugin.php');
 require_once(INCLUDE_DIR.'/class.forms.php');
 require_once(INCLUDE_DIR.'/class.dept.php');
  
-class TrelloConfig extends PluginConfig{
- function getOptions() {
-	 return array(
+ class TrelloConfig extends PluginConfig{
+// class TrelloConfig implements PluginCustomConfig{
+	function hasCustomConfig(){
+		// echo "HAS CUSTOM CONFIG";
+		return true;
+	}
+	function renderCustomConfig(){
+		echo "HERE IS THE FORM";
+		?>
+		<script>
+		alert("hi");
+		</script>
+		<?php
+		// return "HERE IS A FORM";
+		$form = $this->getForm();
+		$form->render();
+		// if ($form && $_POST)
+  //           $form->isValid();
+	}
+
+	function saveCustomConfig(){
+		// $form = $this->getForm();
+		return $this->commitForm();
+		// return $form->isValid();
+		// return $this->pre_save();
+	}
+
+	function getOptions() {
+	  return array(
 	 	'trello_api_key' => new TextboxField(array(
 		 'id' => 'trello_api_key',
 		 'label' => 'Trello API Key',
