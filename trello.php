@@ -72,6 +72,9 @@ class TrelloPlugin extends Plugin {
 
     function onTicketCreated($ticket){      
         try{
+            // TRELLO CHANGES ON TICKET CREATION
+            // If it is the web department ticket, send to Trello board
+            // for now let's just pretend there is an if block here checking that
             $client = new Client();
             $config = $this->getConfig();
             $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
@@ -82,6 +85,6 @@ class TrelloPlugin extends Plugin {
         catch(Exception $e){
             error_log('Error posting to Trello. '. $e->getMessage());
         }
-    }   
+    }
  
 }
