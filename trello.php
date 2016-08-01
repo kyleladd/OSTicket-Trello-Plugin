@@ -79,11 +79,11 @@ class TrelloPlugin extends Plugin {
             $config = $this->getConfig();
             $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
             // // POST to Trello
-            $newcard = array("idList"=> $config->get('create_in_trello_list'),"name"=>$ticket->getNumber() . " - " . $ticket->getSubject() ,"desc"=>$ticket->getLastMessage()->getBody());
+            $newcard = array("idList"=> $config->get('trello_list_id'),"name"=>$ticket->getNumber() . " - " . $ticket->getSubject() ,"desc"=>$ticket->getLastMessage()->getBody());
             $client->cards()->create($newcard);
         }
         catch(Exception $e){
-            error_log('Error posting to Trello. '. $e->getMessage());
+            error_log("Error posting to Trello. " . $e->getMessage());
         }
     }
 
