@@ -1,24 +1,59 @@
 <?php
- 
+
 require_once(INCLUDE_DIR.'/class.plugin.php');
 require_once(INCLUDE_DIR.'/class.forms.php');
 require_once(INCLUDE_DIR.'/class.dept.php');
- 
+
+// We do not store the choices because they come from Trello's API via javascript
+// Therefore, they cannot be matched/validated against config choices
+class OptionalValidationChoiceField extends ChoiceField {
+    static $widget = 'OptionalValidationChoicesWidget';
+}
+class OptionalValidationChoicesWidget extends ChoicesWidget{
+    function getValue() {
+        if (!($value = Widget::getValue()))
+            return null;
+
+        if ($value && !is_array($value))
+            $value = array($value);
+        // Assume multiselect
+        $values = array();
+        $config = $this->field->getConfiguration();
+        if (isset($config['validate_choices']) && $config['validate_choices'] == false) {
+            $values = array_flip($value);
+        }
+        else{
+            $choices = $this->field->getChoices();
+            if (is_array($value)) {
+                foreach($value as $k => $v) {
+                    if (isset($choices[$v]))
+                        $values[$v] = $choices[$v];
+                }
+            }
+        }
+        return $values;
+    }
+}
  class TrelloConfig extends PluginConfig{
 	function hasCustomConfig(){
 		return true;
 	}
 	function renderCustomConfig(){
 		?>
-		<br>
-		<button id="fetchBoards">Fetch Trello Boards</button><br>
-		<button id="fetchLists">Fetch Trello Lists</button><br>
 		<script>
 		$(function() {
+			$('<button id="fetchBoards" style="margin-left:5px;">Fetch Trello Boards</button>').insertAfter($("[name='trello_board_id[]']"));
+			$('<button id="fetchLists" style="margin-left:5px;">Fetch Trello Lists</button>').insertAfter($("[name='trello_list_id[]']"));
 			$("#fetchBoards").click(function(e){
 				e.preventDefault();
 				$.getJSON("https://api.trello.com/1/members/me/boards?key="+$("[name='trello_api_key']").val()+"&token="+$("[name='trello_api_token']").val(),function(data){
 					console.log("BOARDS",data);
+					var result = "";
+					for(var i in data){
+						var board = data[i];
+						result += "<option value=\"" + board.id + "\" " + ("<?=$this->getForm()->getField("trello_board_id")->value;?>" === board.id ? "selected=\"selected\"" : "" ) + ">" + board.name + "</option>";
+					}
+					$("[name='trello_board_id[]']").append(result);
 				})
 				.fail(function(){
 					alert("Failed to get boards");
@@ -26,8 +61,14 @@ require_once(INCLUDE_DIR.'/class.dept.php');
 			});
 			$("#fetchLists").click(function(e){
 				e.preventDefault();
-				$.getJSON("https://api.trello.com/1/boards/"+$("[name='trello_board_id']").val()+"/lists?key="+$("[name='trello_api_key']").val()+"&token="+$("[name='trello_api_token']").val(),function(data){
+				$.getJSON("https://api.trello.com/1/boards/"+$("[name='trello_board_id[]']").val()+"/lists?key="+$("[name='trello_api_key']").val()+"&token="+$("[name='trello_api_token']").val(),function(data){
 					console.log("LISTS",data);
+					var result = "";
+					for(var i in data){
+						var list = data[i];
+						result += "<option value=\"" + list.id + "\" " + ("<?=$this->getForm()->getField("trello_list_id")->value;?>" === list.id ? "selected=\"selected\"" : "" ) + ">" + list.name + "</option>";
+					}
+					$("[name='trello_list_id[]']").append(result);
 				})
 				.fail(function(){
 					alert("Failed to get Lists");
@@ -62,28 +103,27 @@ require_once(INCLUDE_DIR.'/class.dept.php');
 		 'required'=>true,
 		 'hint'=>__('Get your Token: https://trello.com/1/authorize?key=APPLICATIONKEYHERE&scope=read%2Cwrite&name=My+Application&expiration=never&response_type=token'),
 		 'configuration' => array(
-		 	'length' => 0,
-		 	'desc' => 'Get your Token: https://trello.com/1/authorize?key=APPLICATIONKEYHERE&scope=read%2Cwrite&name=My+Application&expiration=never&response_type=token'
+		 	'multiselect' => false
 		 	),
 		 )),
-	 	'trello_board_id' => new TextboxField(array(
+	 	'trello_board_id' => new OptionalValidationChoiceField(array(
 		 'id' => 'trello_board_id',
 		 'label' => 'Trello Board ID',
 		 'required'=>true,
 		 'hint'=>__('Get your Token: https://trello.com/1/authorize?key=APPLICATIONKEYHERE&scope=read%2Cwrite&name=My+Application&expiration=never&response_type=token'),
 		 'configuration' => array(
-		 	'length' => 0,
-		 	'desc' => 'Get your Token: https://trello.com/1/authorize?key=APPLICATIONKEYHERE&scope=read%2Cwrite&name=My+Application&expiration=never&response_type=token'
+		 	'multiselect' => false,
+		 	'validate_choices' => false
 		 	),
 		 )),
-	 	'trello_list_id' => new TextboxField(array(
+	 	'trello_list_id' => new OptionalValidationChoiceField(array(
 		 'id' => 'trello_list_id',
 		 'label' => 'Trello Creation List ID',
 		 'required'=>true,
 		 'hint'=>__('When a ticket is created, add card to this list'),
 		 'configuration' => array(
-		 	'length' => 0,
-		 	'desc' => 'When a ticket is created, add card to this list'
+		 	'multiselect' => false,
+		 	'validate_choices' => false
 		 	),
 		 )),
 		'osticket_department_id' => new ChoiceField(array(
@@ -93,18 +133,18 @@ require_once(INCLUDE_DIR.'/class.dept.php');
             'hint'=>__('Apply this plugin to this departments\' tickets.'),
             'choices'=>Dept::getDepartments(),
             'configuration'=>array(
-                'multiselect' => false,
+                'multiselect' => false
             )
         ))
 	 );
  }
- 
+
  function pre_save(&$config, &$errors) {
 	global $msg;
- 
+
 	if (!$errors)
 	  $msg = 'Configuration updated successfully';
-	 
+
 	return true;
  }
 }
