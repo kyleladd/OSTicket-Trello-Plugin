@@ -1,34 +1,34 @@
 <?php
- 
+
 require_once(INCLUDE_DIR . 'class.plugin.php');
 require_once(INCLUDE_DIR . 'class.signal.php');
 require_once(INCLUDE_DIR . 'class.app.php');
- 
+
 require_once('config.php');
- 
+
 define('TRELLO_TABLE',TABLE_PREFIX.'trello');
 define('PLUGINS_ROOT',INCLUDE_DIR.'plugins/');
-define('TRELLO_PLUGIN_ROOT',PLUGINS_ROOT.'TrelloPlugin/');
+define('TRELLO_PLUGIN_ROOT',PLUGINS_ROOT.basename(__DIR__).'/');
 
 require_once(TRELLO_PLUGIN_ROOT . 'class.trello_install.php');
 
 require_once(TRELLO_PLUGIN_ROOT . 'vendor/autoload.php');
-use Trello\Client; 
+use Trello\Client;
 
 class TrelloPlugin extends Plugin {
- 
+
     var $config_class = 'TrelloConfig';
- 
+
     function bootstrap() {
         if ($this->firstRun()) {
             $this->configureFirstRun();
         }
- 
+
         $config = $this->getConfig();
-        
+
         Signal::connect('model.created', array($this, 'onTicketCreated'), 'Ticket');
     }
- 
+
     /**
      * Checks if this is the first run of our plugin.
      * @return boolean
@@ -38,7 +38,7 @@ class TrelloPlugin extends Plugin {
         $res=db_query($sql);
         return  (db_num_rows($res)==0);
     }
- 
+
     /**
      * Necessary functionality to configure first run of the application
      */
@@ -49,7 +49,7 @@ class TrelloPlugin extends Plugin {
             . "Unable to create database tables!";
        }
     }
- 
+
     /**
      * Kicks off database installation scripts
      * @return boolean
@@ -57,9 +57,9 @@ class TrelloPlugin extends Plugin {
     function createDBTables() {
        $installer = new TrelloInstaller();
        return $installer->install();
- 
+
     }
- 
+
     /**
      * Uninstall hook.
      * @param type $errors
@@ -70,7 +70,7 @@ class TrelloPlugin extends Plugin {
        return $installer->remove();
     }
 
-    function onTicketCreated($ticket){      
+    function onTicketCreated($ticket){
         try{
             // TRELLO CHANGES ON TICKET CREATION
             // If it is the web department ticket, send to Trello board
@@ -86,5 +86,5 @@ class TrelloPlugin extends Plugin {
             error_log('Error posting to Trello. '. $e->getMessage());
         }
     }
- 
+
 }
