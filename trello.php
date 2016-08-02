@@ -57,7 +57,6 @@ class TrelloPlugin extends Plugin {
     function createDBTables() {
        $installer = new TrelloInstaller();
        return $installer->install();
-
     }
 
     /**
@@ -72,15 +71,17 @@ class TrelloPlugin extends Plugin {
 
     function onTicketCreated($ticket){
         try{
-            // TRELLO CHANGES ON TICKET CREATION
-            // If it is the web department ticket, send to Trello board
-            // for now let's just pretend there is an if block here checking that
-            $client = new Client();
             $config = $this->getConfig();
-            $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
-            // // POST to Trello
-            $newcard = array("idList"=> $config->get('trello_list_id'),"name"=>$ticket->getNumber() . " - " . $ticket->getSubject() ,"desc"=>$ticket->getLastMessage()->getBody());
-            $client->cards()->create($newcard);
+            // If the ticket was made for the department with a hook into Trello
+            if($config->get('osticket_department_id')==$ticket->dept->id){
+                // TRELLO CHANGES ON TICKET CREATION
+                $client = new Client();
+                
+                $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
+                // // POST to Trello
+                $newcard = array("idList"=> $config->get('trello_list_id'),"name"=>$ticket->getNumber() . " - " . $ticket->getSubject() ,"desc"=>$ticket->getLastMessage()->getBody());
+                $client->cards()->create($newcard);
+            }
         }
         catch(Exception $e){
             error_log("Error posting to Trello. " . $e->getMessage());

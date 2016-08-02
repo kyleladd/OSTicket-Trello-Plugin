@@ -46,32 +46,30 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
 			$('<button id="fetchLists" style="margin-left:5px;">Fetch Trello Lists</button>').insertAfter($("[name='trello_list_id[]']"));
 			$("#fetchBoards").click(function(e){
 				e.preventDefault();
-				$.getJSON("https://api.trello.com/1/members/me/boards?key="+$("[name='trello_api_key']").val()+"&token="+$("[name='trello_api_token']").val(),function(data){
-					console.log("BOARDS",data);
+				$.getJSON("https://api.trello.com/1/members/me/boards?filter=open&key="+$("[name='trello_api_key']").val()+"&token="+$("[name='trello_api_token']").val(),function(data){
 					var result = "";
 					for(var i in data){
 						var board = data[i];
 						result += "<option value=\"" + board.id + "\" " + ("<?=$this->getForm()->getField("trello_board_id")->value;?>" === board.id ? "selected=\"selected\"" : "" ) + ">" + board.name + "</option>";
 					}
-					$("[name='trello_board_id[]']").append(result);
+					$("[name='trello_board_id[]']").html(result);
 				})
 				.fail(function(){
-					alert("Failed to get boards");
+					alert("Failed to get Trello Boards. Be sure to fill out the Trello API Keyand Trello API Token first.");
 				});
 			});
 			$("#fetchLists").click(function(e){
 				e.preventDefault();
-				$.getJSON("https://api.trello.com/1/boards/"+$("[name='trello_board_id[]']").val()+"/lists?key="+$("[name='trello_api_key']").val()+"&token="+$("[name='trello_api_token']").val(),function(data){
-					console.log("LISTS",data);
+				$.getJSON("https://api.trello.com/1/boards/"+$("[name='trello_board_id[]']").val()+"/lists/?filter=open&key="+$("[name='trello_api_key']").val()+"&token="+$("[name='trello_api_token']").val(),function(data){
 					var result = "";
 					for(var i in data){
 						var list = data[i];
 						result += "<option value=\"" + list.id + "\" " + ("<?=$this->getForm()->getField("trello_list_id")->value;?>" === list.id ? "selected=\"selected\"" : "" ) + ">" + list.name + "</option>";
 					}
-					$("[name='trello_list_id[]']").append(result);
+					$("[name='trello_list_id[]']").html(result);
 				})
 				.fail(function(){
-					alert("Failed to get Lists");
+					alert("Failed to get Trello Lists. Be sure to fill out the Trello API Key, Trello API Token, and Trello Board first.");
 				});
 			});
 		});
