@@ -11,6 +11,7 @@ define('PLUGINS_ROOT',INCLUDE_DIR.'plugins/');
 define('TRELLO_PLUGIN_ROOT',PLUGINS_ROOT.basename(__DIR__).'/');
 
 require_once(TRELLO_PLUGIN_ROOT . 'class.trello_install.php');
+require_once(TRELLO_PLUGIN_ROOT . 'api.trello.php');
 
 require_once(TRELLO_PLUGIN_ROOT . 'vendor/autoload.php');
 use Trello\Client;
@@ -25,7 +26,10 @@ class TrelloPlugin extends Plugin {
         }
 
         $config = $this->getConfig();
-
+        Signal::connect ( 'api', array (
+                'TrelloPlugin',
+                'callbackDispatch' 
+        ) );
         Signal::connect('model.created', array($this, 'onTicketCreated'), 'Ticket');
     }
 
@@ -86,6 +90,11 @@ class TrelloPlugin extends Plugin {
         catch(Exception $e){
             error_log("Error posting to Trello. " . $e->getMessage());
         }
+    }
+    // Add new Routes
+    static public function callbackDispatch($object, $data) {
+        $trello = url ( '^/trello$', array('api.trello.php:TrelloApiController','restGetTrello'));
+        $object->append ( $trello );
     }
 
 }

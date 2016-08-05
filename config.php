@@ -39,6 +39,10 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
 		return true;
 	}
 	function renderCustomConfig(){
+		// var_dump($this);
+		$form = $this->getForm();
+		// // if ($form && $_POST)
+            $form->isValid();
 		?>
 		<script>
 		$(function() {
@@ -50,7 +54,7 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
 					var result = "";
 					for(var i in data){
 						var board = data[i];
-						result += "<option value=\"" + board.id + "\" " + ("<?=$this->getForm()->getField("trello_board_id")->value;?>" === board.id ? "selected=\"selected\"" : "" ) + ">" + board.name + "</option>";
+						result += "<option value=\"" + board.id + "\" " + ("<?=$form->getField("trello_board_id")->value;?>" === board.id ? "selected=\"selected\"" : "" ) + ">" + board.name + "</option>";
 					}
 					$("[name='trello_board_id[]']").html(result);
 				})
@@ -64,7 +68,7 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
 					var result = "";
 					for(var i in data){
 						var list = data[i];
-						result += "<option value=\"" + list.id + "\" " + ("<?=$this->getForm()->getField("trello_list_id")->value;?>" === list.id ? "selected=\"selected\"" : "" ) + ">" + list.name + "</option>";
+						result += "<option value=\"" + list.id + "\" " + ("<?=$form->getField("trello_list_id")->value;?>" === list.id ? "selected=\"selected\"" : "" ) + ">" + list.name + "</option>";
 					}
 					$("[name='trello_list_id[]']").html(result);
 				})
@@ -75,7 +79,6 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
 		});
 		</script>
 		<?php
-		$form = $this->getForm();
 		$form->render();
 	}
 
