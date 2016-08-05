@@ -83,12 +83,24 @@ class TrelloPlugin extends Plugin {
                 
                 $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
                 // // POST to Trello
-                $newcard = array("idList"=> $config->get('trello_list_id'),"name"=>$ticket->getNumber() . " - " . $ticket->getSubject() ,"desc"=>$ticket->getLastMessage()->getBody());
+                $newcard = array("idList"=> $config->get('trello_list_id'),"name"=>createTrelloTitle($ticket) ,"desc"=>$ticket->getLastMessage()->getBody());
                 $client->cards()->create($newcard);
             }
         }
         catch(Exception $e){
             error_log("Error posting to Trello. " . $e->getMessage());
+        }
+    }
+    static function createTrelloTitle($ticket){
+        return $ticket->getNumber() . " - " . $ticket->getSubject();
+    }
+    static function parseTrelloTicketNumber($title){
+        try{
+            return substr ( $title , 0, strpos ( $title , "-" ) - 1 );
+        }
+        catch(Exception $e){
+            // error_log("Error posting to Trello. " . $e->getMessage());
+            return "";
         }
     }
     // Add new Routes
