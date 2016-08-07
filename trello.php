@@ -6,10 +6,6 @@ require_once(INCLUDE_DIR . 'class.app.php');
 
 require_once('config.php');
 
-define('TRELLO_TABLE',TABLE_PREFIX.'trello');
-define('PLUGINS_ROOT',INCLUDE_DIR.'plugins/');
-define('TRELLO_PLUGIN_ROOT',PLUGINS_ROOT.basename(__DIR__).'/');
-
 require_once(TRELLO_PLUGIN_ROOT . 'class.trello_install.php');
 require_once(TRELLO_PLUGIN_ROOT . 'api.trello.php');
 
@@ -83,7 +79,7 @@ class TrelloPlugin extends Plugin {
                 
                 $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
                 // // POST to Trello
-                $newcard = array("idList"=> $config->get('trello_list_id'),"name"=>createTrelloTitle($ticket) ,"desc"=>$ticket->getLastMessage()->getBody());
+                $newcard = array("idList"=> $config->get('trello_list_id'),"name"=>TrelloPlugin::createTrelloTitle($ticket) ,"desc"=>$ticket->getLastMessage()->getBody());
                 $client->cards()->create($newcard);
             }
         }
@@ -99,14 +95,18 @@ class TrelloPlugin extends Plugin {
             return substr ( $title , 0, strpos ( $title , "-" ) - 1 );
         }
         catch(Exception $e){
-            // error_log("Error posting to Trello. " . $e->getMessage());
             return "";
         }
     }
     // Add new Routes
     static public function callbackDispatch($object, $data) {
-        $trello = url ( '^/trello$', array('api.trello.php:TrelloApiController','restGetTrello'));
+        $trello = url_post ( '^/trello$', array('api.trello.php:TrelloApiController','postFromTrello'));
         $object->append ( $trello );
+    }
+    // https://developers.trello.com/apis/webhooks#source
+    static public function isValidTrelloIP($ip){
+        $trelloIPs = array("107.23.104.115","107.23.149.70","54.152.166.250","54.164.77.56");
+        return in_array($ip,$trelloIPs);
     }
 
 }

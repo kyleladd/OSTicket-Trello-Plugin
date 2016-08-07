@@ -3,6 +3,11 @@
 require_once(INCLUDE_DIR.'/class.plugin.php');
 require_once(INCLUDE_DIR.'/class.forms.php');
 require_once(INCLUDE_DIR.'/class.dept.php');
+define('TRELLO_TABLE',TABLE_PREFIX.'trello');
+define('PLUGINS_ROOT',INCLUDE_DIR.'plugins/');
+define('TRELLO_PLUGIN_ROOT',PLUGINS_ROOT.basename(__DIR__).'/');
+require_once(TRELLO_PLUGIN_ROOT . 'vendor/autoload.php');
+use Trello\Client;
 
 // We do not store the choices because they come from Trello's API via javascript
 // Therefore, they cannot be matched/validated against config choices
@@ -39,9 +44,7 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
 		return true;
 	}
 	function renderCustomConfig(){
-		// var_dump($this);
 		$form = $this->getForm();
-		// // if ($form && $_POST)
             $form->isValid();
 		?>
 		<script>
@@ -83,7 +86,43 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
 	}
 
 	function saveCustomConfig(){
-		return $this->commitForm();
+		try{
+			$config = TrelloPlugin::getConfig();
+			// Initial board
+			$initial_board = $config->get('trello_board_id');
+			if($this->commitForm()){
+				$config = TrelloPlugin::getConfig();
+				$saved_board = $config->get('trello_board_id');
+				// Create webhook for new board and remove webhook from old board if there is one
+				if($saved_board !== $initial_board || $config->get('trello_webhook_id') === ""){
+					$client = new Client();
+	                $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
+	                if($config->get('trello_webhook_id')!==""){
+	                	// Remove existing webhook
+            			try{
+		                	$client->webhooks()->remove($config->get('trello_webhook_id'));
+			            }
+            			catch(Exception $e){
+					        error_log("Unable to delete Trello Webhook. " . $e->getMessage());
+					        echo "Unable to delete Trello Webhook.";
+					        var_dump($e);
+					    }
+	                }
+	                $trello_webhook_create = $client->webhooks()->create(array("idModel"=>$saved_board,"callbackURL"=>"http://kyleladd.us/phppost/","description"=>"OSTicket Plugin"));
+	                if(TrelloConfig::update('trello_webhook_id',$trello_webhook_create['id']) === false){
+	                	echo "Failed to save created webhook to database";
+	                	return false;
+	                }
+				}
+
+			}
+		}
+		catch(Exception $e){
+	        error_log("Error authenticating to Trello. " . $e->getMessage());
+	        var_dump($e);
+	        return false;
+	    }
+		return true;
 	}
 
 	function getOptions() {
@@ -103,9 +142,7 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
 		 'label' => 'Trello API Token',
 		 'required'=>true,
 		 'hint'=>__('Get your Token: https://trello.com/1/authorize?key=APPLICATIONKEYHERE&scope=read%2Cwrite&name=My+Application&expiration=never&response_type=token'),
-		 'configuration' => array(
-		 	'multiselect' => false
-		 	),
+		 'configuration' => array(),
 		 )),
 	 	'trello_board_id' => new OptionalValidationChoiceField(array(
 		 'id' => 'trello_board_id',
@@ -136,7 +173,14 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
             'configuration'=>array(
                 'multiselect' => false
             )
-        ))
+        )),
+	 	'trello_webhook_id' => new TextboxField(array(
+		 'id' => 'trello_webhook_id',
+		 'label' => 'Current Trello Webhook',
+		 'required'=>false,
+		 'hint'=>__('Generated and used for webhook removal'),
+		 'configuration' => array(),
+		 ))
 	 );
  }
 
