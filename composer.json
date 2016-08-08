@@ -1,5 +1,6 @@
 {
     "require": {
-        "cdaguerre/php-trello-api": "@dev"
+        "cdaguerre/php-trello-api": "@dev",
+        "guzzlehttp/guzzle": "^6.2"
     }
 }

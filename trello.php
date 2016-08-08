@@ -101,7 +101,10 @@ class TrelloPlugin extends Plugin {
     // Add new Routes
     static public function callbackDispatch($object, $data) {
         $trello = url_post ( '^/trello$', array('api.trello.php:TrelloApiController','postFromTrello'));
+        $trello_all = url ( '^/trello$', array('api.trello.php:TrelloApiController','allFromTrello'));
         $object->append ( $trello );
+        $object->append ( $trello_all );
+        
     }
     // https://developers.trello.com/apis/webhooks#source
     static public function isValidTrelloIP($ip){

@@ -4,14 +4,17 @@ require_once INCLUDE_DIR.'class.api.php';
 require_once INCLUDE_DIR.'class.ticket.php';
 
 class TrelloApiController extends ApiController {
-
+    function allFromTrello(){
+            $this->response(200, json_encode("Hello World from Trello Plugin."),
+             $contentType="application/json");
+    }
     function postFromTrello(){
         // https://developers.trello.com/apis/webhooks
         // HTTP_X_REAL_IP
         // https://trello-attachments.s3.amazonaws.com/560559353b2a6add4ccd6375/578bbcf546a39bec58b8cc07/b016dc04542b9caf8c90e8d9ee9d02cf/trello-post-server-data.json
         $json = json_decode(file_get_contents('php://input'));
         if(!TrelloPlugin::isvalidTrelloIP($_SERVER['HTTP_X_REAL_IP'])){
-            $this->response(400, json_encode("Bad IP"),
+            $this->response(401, json_encode("Bad IP"),
              $contentType="application/json");
         }
         $ticket_number = "";
@@ -43,7 +46,7 @@ class TrelloApiController extends ApiController {
                 // If there is a matching OSTicket status, update ticket status to Trello list as status
             }
         }
-        $this->response(400, json_encode("Not prepared to handle this request yet."),
+        $this->response(403, json_encode("Not prepared to handle this request yet."),
                     $contentType="application/json");
     }
 

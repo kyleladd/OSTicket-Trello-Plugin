@@ -108,7 +108,9 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
 					        var_dump($e);
 					    }
 	                }
-	                $trello_webhook_create = $client->webhooks()->create(array("idModel"=>$saved_board,"callbackURL"=>"http://kyleladd.us/phppost/","description"=>"OSTicket Plugin"));
+                    // http://136.204.104.63:8080/osticket/api/trello
+                    // http://kyleladd.us/phppost/
+	                $trello_webhook_create = $client->webhooks()->create(array("idModel"=>$saved_board,"callbackURL"=>"http://136.204.104.63:8080/osticket/api/trello","description"=>"OSTicket Plugin"));
 	                if(TrelloConfig::update('trello_webhook_id',$trello_webhook_create['id']) === false){
 	                	echo "Failed to save created webhook to database";
 	                	return false;
