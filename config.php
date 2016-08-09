@@ -144,7 +144,9 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
 		 'label' => 'Trello API Token',
 		 'required'=>true,
 		 'hint'=>__('Get your Token: https://trello.com/1/authorize?key=APPLICATIONKEYHERE&scope=read%2Cwrite&name=My+Application&expiration=never&response_type=token'),
-		 'configuration' => array(),
+		 'configuration' => array(
+            'length' => 0
+            ),
 		 )),
 	 	'trello_board_id' => new OptionalValidationChoiceField(array(
 		 'id' => 'trello_board_id',
@@ -181,7 +183,9 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
 		 'label' => 'Current Trello Webhook',
 		 'required'=>false,
 		 'hint'=>__('Generated and used for webhook removal'),
-		 'configuration' => array(),
+		 'configuration' => array(
+            'length' => 0
+            ),
 		 ))
 	 );
  }
