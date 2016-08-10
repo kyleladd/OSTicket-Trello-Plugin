@@ -17,7 +17,7 @@ class TrelloApiController extends ApiController {
             $this->response(401, json_encode("Bad IP"),
              $contentType="application/json");
         }
-        $ticket_number = "";
+        $ticket_id = "";
         $statusesOrig = TicketStatusList::getStatuses(array('states' => $states))->all();
         $statuses = array();
         foreach ($statusesOrig as $status){
@@ -29,20 +29,24 @@ class TrelloApiController extends ApiController {
             // If we are moving between lists
             if(isset($json['action']['data']['listAfter'])){
                 $status = array_search($json['action']['data']['listAfter']['name'],$statuses);
-                $ticket_number = TrelloPlugin::parseTrelloTicketNumber($json['action']['data']['card']['name']);
-                if($ticket_number == ""){
-                    $this->response(404, json_encode("Unable to parse ticket number"),
+                $ticket_id = TrelloPlugin::parseTrelloTicketNumber($json['action']['data']['card']['name']);
+                if($ticket_id == ""){
+                    $this->response(404, json_encode("Unable to parse ticket id"),
                         $contentType="application/json");
                 }
-                // If it were by Id opposed to number (which I probably will end up doing) - lookup
-                $ticket = Ticket::lookupByNumber($ticket_number);
+                $ticket = Ticket::lookup($ticket_id);
                 if($ticket == null){
                     $this->response(404, json_encode("Unable to find ticket."),
                         $contentType="application/json");
                 }
-                $ticket->setStatus($status);
-                $this->response(200, json_encode($ticket),
+                if($ticket->setStatus($status)){
+                    $this->response(200, json_encode($ticket),
                     $contentType="application/json");
+                }
+                else{
+                    $this->response(500, json_encode("Unable to update ticket status"),
+                    $contentType="application/json");
+                }
                 // If there is a matching OSTicket status, update ticket status to Trello list as status
             }
         }

@@ -88,7 +88,7 @@ class TrelloPlugin extends Plugin {
         }
     }
     static function createTrelloTitle($ticket){
-        return $ticket->getNumber() . " - " . $ticket->getSubject();
+        return $ticket->getId() . " - " . $ticket->getSubject();
     }
     static function parseTrelloTicketNumber($title){
         try{
