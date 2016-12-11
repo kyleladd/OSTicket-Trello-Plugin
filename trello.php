@@ -26,7 +26,7 @@ class TrelloPlugin extends Plugin {
                 'TrelloPlugin',
                 'callbackDispatch' 
         ) );
-        Signal::connect('model.created', array($this, 'onTicketCreated'), 'Ticket');
+        Signal::connect('ticket.created', array($this, 'onTicketCreated'), 'Ticket');
     }
 
     /**

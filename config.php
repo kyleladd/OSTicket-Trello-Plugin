@@ -134,8 +134,7 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
          'required'=>true,
          'hint'=>__('Get your Key: https://trello.com/app-key'),
          'configuration' => array(
-            'length' => 0,
-            'desc' => 'Get your Key: https://trello.com/app-key'
+            'length' => 0
             )
          )),
         'trello_api_token' => new TextboxField(array(
