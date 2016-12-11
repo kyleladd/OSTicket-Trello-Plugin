@@ -62,7 +62,7 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
                     $("[name='trello_board_id[]']").html(result);
                 })
                 .fail(function(){
-                    alert("Failed to get Trello Boards. Be sure to fill out the Trello API Keyand Trello API Token first.");
+                    alert("Failed to get Trello Boards. Be sure to fill out the Trello API Key and Trello API Token first.");
                 });
             });
             $("#fetchLists").click(function(e){
