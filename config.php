@@ -98,7 +98,7 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
                 if($saved_board !== $initial_board || $config->get('trello_webhook_id') === ""){
                     $client = new Client();
                     $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
-                    if($config->get('trello_webhook_id')!==""){
+                    if($config->get('trello_webhook_id') !== ""){
                         // Remove existing webhook
                         try{
                             $client->webhooks()->remove($config->get('trello_webhook_id'));
