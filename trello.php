@@ -22,10 +22,7 @@ class TrelloPlugin extends Plugin {
         }
 
         $config = $this->getConfig();
-        Signal::connect ( 'api', array (
-                'TrelloPlugin',
-                'callbackDispatch' 
-        ) );
+        Signal::connect ( 'api', array('TrelloPlugin', 'callbackDispatch' ));
         Signal::connect('ticket.created', array($this, 'onTicketCreated'), 'Ticket');
     }
 
@@ -70,22 +67,28 @@ class TrelloPlugin extends Plugin {
     }
 
     function onTicketCreated($ticket){
-        try{
-            $config = $this->getConfig();
-            // If the ticket was made for the department with a hook into Trello
-            if($config->get('osticket_department_id') == $ticket->dept->id){
-                // TRELLO CHANGES ON TICKET CREATION
-                $client = new Client();
-                
-                $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
-                // // POST to Trello
-                $newcard = array("idList"=> $config->get('trello_list_id'), "name"=>TrelloPlugin::createTrelloTitle($ticket), "desc"=>$ticket->getLastMessage()->getBody());
-                $client->cards()->create($newcard);
+            //If it did not come from trello
+            if(!strpos($ticket->getSubject(), "***OSTICKETPLUGIN***") === 0){
+            // if($ticket->getSource() != "Trello"){
+                try{
+                    $config = $this->getConfig();
+                    // If the ticket was made for the department with a hook into Trello
+                    if($config->get('osticket_department_id') == $ticket->dept->id){
+                        // TRELLO CHANGES ON TICKET CREATION
+                        $client = new Client();
+                        $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
+                        // // POST to Trello
+                        $newcard = array("idList"=> $config->get('trello_list_id'), "name"=>TrelloPlugin::createTrelloTitle($ticket), "desc"=>$ticket->getLastMessage()->getBody());
+                        $client->cards()->create($newcard);
+                    }
+                }
+                catch(Exception $e){
+                    error_log("Error posting to Trello. " . $e->getMessage());
+                }
+            // }
             }
-        }
-        catch(Exception $e){
-            error_log("Error posting to Trello. " . $e->getMessage());
-        }
+            
+        
     }
     static function createTrelloTitle($ticket){
         return $ticket->getId() . " - " . $ticket->getSubject();
@@ -95,19 +98,16 @@ class TrelloPlugin extends Plugin {
             return substr ( $title , 0, strpos ( $title , "-" ) - 1 );
         }
         catch(Exception $e){
-            return "";
+            return null;
         }
     }
     // Add new Routes
-    static public function callbackDispatch($object, $data) {
-        $trello = url_post('^/trello$', array('TrelloApiController', 'postFromTrello'));
-        $trello_all = url('^/trello$', array('TrelloApiController', 'allFromTrello'));
-        $object->append ($trello);
-        $object->append ($trello_all);
-        
+    public static function callbackDispatch($object, $data) {
+        $object->append(url_post('^/trello$', array('TrelloApiController', 'postFromTrello')));
+        $object->append(url('^/trello$', array('TrelloApiController', 'allFromTrello')));
     }
     // https://developers.trello.com/apis/webhooks#source
-    static public function isValidTrelloIP($ip){
+    public static function isValidTrelloIP($ip){
         $trelloIPs = array("107.23.104.115","107.23.149.70","54.152.166.250","54.164.77.56");
         return in_array($ip,$trelloIPs);
     }
