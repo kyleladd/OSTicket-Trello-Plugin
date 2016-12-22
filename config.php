@@ -176,6 +176,15 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
                 'multiselect' => false
             )
         )),
+        'trello_user_email' => new TextboxField(array(
+         'id' => 'trello_user_email',
+         'label' => 'OSTicket User Email for Trello',
+         'required'=>true,
+         'hint'=>__('For Ticket creation in Trello'),
+         'configuration' => array(
+            'length' => 0
+            ),
+         )),
         'trello_webhook_id' => new TextboxField(array(
          'id' => 'trello_webhook_id',
          'label' => 'Current Trello Webhook',

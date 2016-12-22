@@ -11,7 +11,8 @@ class TrelloApiController extends ApiController {
     }
     function postFromTrello(){
         try{
-            global $ost;
+            global $ost, $cfg;
+            $config = TrelloPlugin::getConfig();
             $errors = array();
             // https://developers.trello.com/apis/webhooks
             // HTTP_X_REAL_IP
@@ -41,9 +42,10 @@ class TrelloApiController extends ApiController {
                     "statusId" => $statusId,
                     // "source" => "Trello",
                     "source" => "Other",
-                    "email" => "kladd6@gmail.com"
+                    "email" => $config->get('trello_user_email')
                 );
                 $ticket = Ticket::create($ticketToBeCreated, $errors, "api", false, false);
+                
                 if($ticket == null || !empty($errors)){
                     echo "errorrrrrrr";
                     $ost->logDebug("DEBUG","Can't create ticket. ". json_encode($json));
@@ -70,7 +72,6 @@ class TrelloApiController extends ApiController {
                 $entry->title = $ticket->getId() . " - " . $subject;
                 $entry->save();
             }
-                $config = TrelloPlugin::getConfig();
                 $client = new Client();
                 $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
                 $client->cards()->setName($json['action']['data']['card']['id'], $ticket->getSubject());
