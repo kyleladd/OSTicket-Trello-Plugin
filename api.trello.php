@@ -21,6 +21,8 @@ class TrelloApiController extends ApiController {
                 $this->response(401, json_encode("Bad IP"),
                  $contentType="application/json");
             }
+            // TODO - if not valid webhook/listId Trello Model Id, return 401
+
 
             // For matching the Trello list names to the status names
             $statusesOrig = TicketStatusList::getStatuses(array('states' => $states))->all();
@@ -33,8 +35,8 @@ class TrelloApiController extends ApiController {
                 // $duedate = () ? : "";
                 $duedate = "";
                 $subject = $json['action']['data']['card']['name'];
-                $message = $json['action']['data']['card']['name'];
-                $statusId = array_search($json['action']['data']['listAfter']['name'],$statuses);
+                $message = "Card was created in Trello, description is coming soon. The card is located: <a href=\"https://trello.com/c/".$json['action']['data']['card']['shortLink']."\">https://trello.com/c/".$json['action']['data']['card']['shortLink']."</a>";
+                $statusId = array_search($json['action']['data']['listAfter']['name'],$statuses); //TODO
                 $ticketToBeCreated = array(
                     "subject" => "***OSTICKETPLUGIN***".$subject,
                     "message" => $message,
@@ -45,9 +47,8 @@ class TrelloApiController extends ApiController {
                     "email" => $config->get('trello_user_email')
                 );
                 $ticket = Ticket::create($ticketToBeCreated, $errors, "api", false, false);
-                
+
                 if($ticket == null || !empty($errors)){
-                    echo "errorrrrrrr";
                     $ost->logDebug("DEBUG","Can't create ticket. ". json_encode($json));
                     $this->response(500, json_encode($errors),
                         $contentType="application/json");
@@ -108,12 +109,13 @@ class TrelloApiController extends ApiController {
                     }
                     // If there is a matching OSTicket status, update ticket status to Trello list as status
                 }
-                else{
-                    $ost->logDebug("DEBUG","Not moving between lists. ". json_encode($json));
+                // Update the ticket description 
+                // TODO - verify \n\r\t are maintained during syncing
+                if(isset($json['action']['data']['card']['desc']) && $ticket->getThreadEntries()[0]->getBody()->body !== $json['action']['data']['card']['desc']){
+                    $ticket->getThreadEntries()[0]->setBody($json['action']['data']['card']['desc']);
                 }
             }
             if(!empty($errors)){
-                // echo "ERRORS";
                 $ost->logDebug("DEBUG","Errors: ". json_encode($errors));
                 $this->response(500, json_encode($errors),
                         $contentType="application/json");
@@ -129,6 +131,5 @@ class TrelloApiController extends ApiController {
             return false;
         }
     }
-
 }
 ?>
