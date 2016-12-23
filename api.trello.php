@@ -35,8 +35,15 @@ class TrelloApiController extends ApiController {
                 // $duedate = () ? : "";
                 $duedate = "";
                 $subject = $json['action']['data']['card']['name'];
-                $message = "Card was created in Trello, description is coming soon. The card is located: <a href=\"https://trello.com/c/".$json['action']['data']['card']['shortLink']."\">https://trello.com/c/".$json['action']['data']['card']['shortLink']."</a>";
-                $statusId = array_search($json['action']['data']['listAfter']['name'],$statuses); //TODO
+                $statusId = array_search($json['action']['data']['listAfter']['name'],$statuses);
+
+                if(isset($json['action']['data']['card']['desc'])){
+                    $message = $json['action']['data']['card']['desc'];
+                }
+                else{
+                    $message = "Card was created in Trello, description is coming soon. The card is located: <a href=\"https://trello.com/c/".$json['action']['data']['card']['shortLink']."\">https://trello.com/c/".$json['action']['data']['card']['shortLink']."</a>";
+                }
+
                 $ticketToBeCreated = array(
                     "subject" => "***OSTICKETPLUGIN***".$subject,
                     "message" => $message,
@@ -58,21 +65,21 @@ class TrelloApiController extends ApiController {
                 $ticket->_answers['subject'] = $ticket->getId() . " - " . $subject;
 
                 foreach (DynamicFormEntryAnswer::objects()
-                ->filter(array(
-                    'entry__object_id' => $ticket->getId(),
-                    'entry__object_type' => 'T'
-                )) as $answer
-            ) {
-                if(mb_strtolower($answer->field->name)
-                    ?: 'field.' . $answer->field->id == "subject"){
-                    $answer->setValue($ticket->getId() . " - " . $subject);
-                    $answer->save();
+                    ->filter(array(
+                        'entry__object_id' => $ticket->getId(),
+                        'entry__object_type' => 'T'
+                    )) as $answer
+                ) {
+                    if(mb_strtolower($answer->field->name)
+                        ?: 'field.' . $answer->field->id == "subject"){
+                        $answer->setValue($ticket->getId() . " - " . $subject);
+                        $answer->save();
+                    }
                 }
-            }
-            foreach ($entries as $entry) {
-                $entry->title = $ticket->getId() . " - " . $subject;
-                $entry->save();
-            }
+                foreach ($entries as $entry) {
+                    $entry->title = $ticket->getId() . " - " . $subject;
+                    $entry->save();
+                }
                 $client = new Client();
                 $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
                 $client->cards()->setName($json['action']['data']['card']['id'], $ticket->getSubject());
@@ -93,11 +100,10 @@ class TrelloApiController extends ApiController {
                         $contentType="application/json");
                 }
 
-
-
                 // If we are moving between lists - Updating the ticket status
                 if(isset($json['action']['data']['listAfter'])){
                     $status = array_search($json['action']['data']['listAfter']['name'],$statuses);
+                    
                     if($ticket->setStatus($status)){
                         $this->response(200, json_encode($ticket),
                         $contentType="application/json");
