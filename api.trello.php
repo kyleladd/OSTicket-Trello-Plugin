@@ -4,6 +4,7 @@ require_once INCLUDE_DIR.'class.api.php';
 require_once INCLUDE_DIR.'class.ticket.php';
 require_once(TRELLO_PLUGIN_ROOT . 'trello.php');
 use Trello\Client;
+use Trello\Manager;
 class TrelloApiController extends ApiController {
     function allFromTrello(){
             $this->response(200, json_encode("Hello World from Trello Plugin."),
@@ -22,7 +23,10 @@ class TrelloApiController extends ApiController {
                  $contentType="application/json");
             }
             // TODO - if not valid webhook/listId Trello Model Id, return 401
-
+            if($json['model']['id'] !== $config->get('trello_board_id')){
+                $this->response(401, json_encode("Trello list id does not match what is stored in OSTicket"),
+                 $contentType="application/json");
+            }
 
             // For matching the Trello list names to the status names
             $statusesOrig = TicketStatusList::getStatuses(array('states' => $states))->all();
@@ -31,14 +35,20 @@ class TrelloApiController extends ApiController {
                 $statuses[$status->getId()] = $status->getName();
             }
 
+            $client = new Client();
+            $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
+            $manager = new Manager($client);
+
             if($json['action']['type']==="createCard"){
                 // $duedate = () ? : "";
                 $duedate = "";
                 $subject = $json['action']['data']['card']['name'];
                 $statusId = array_search($json['action']['data']['listAfter']['name'],$statuses);
-
-                if(isset($json['action']['data']['card']['desc'])){
-                    $message = $json['action']['data']['card']['desc'];
+                $card = $manager->getCard($json['action']['data']['card']['id']);
+                $desc = $card->getDescription();
+                
+                if(!empty($desc)){
+                    $message = $desc;
                 }
                 else{
                     $message = "Card was created in Trello, description is coming soon. The card is located: <a href=\"https://trello.com/c/".$json['action']['data']['card']['shortLink']."\">https://trello.com/c/".$json['action']['data']['card']['shortLink']."</a>";
@@ -80,8 +90,6 @@ class TrelloApiController extends ApiController {
                     $entry->title = $ticket->getId() . " - " . $subject;
                     $entry->save();
                 }
-                $client = new Client();
-                $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
                 $client->cards()->setName($json['action']['data']['card']['id'], $ticket->getSubject());
             }
             // If it is a card being moved into a new list,
