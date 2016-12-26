@@ -7,8 +7,9 @@ The goal of this plugin is to be able to sync your OSTicket tickets with a Trell
 - ```composer install```
 - Copy Repo to OSTicket's plugin directory (include/plugins/)
 - Add New Plugin: [OSTICKET_URL]/scp/plugins.php
-- Enable Plugin
-- Configure Plugin via the plugin's form. *Note: This must be completed after the plugin is enabled because Trello verifies the url is a 200 status code in order for the webhook to be created. The plugin can't respond to or create that url until the plugin is enabled.*
+- Select the OSTicket Trello Plugin
+- Enable the plugin within OSTicket
+- Configure the plugin via the plugin's form. *Note: This must be completed after the plugin is enabled because Trello verifies the url is a 200 status code in order for the webhook to be created. Enabling the plugin first allows the plugin/OSTicket to answer the request with a 200 status code when configuring the plugin. When enabled, the plugin hooks into the url dispatcher and creates the api endpoints for Trello within OSTicket. "The provided callbackURL must be a valid URL during the creation of the webhook. We run a quick HTTP HEAD request on the URL, and if a 200 status code is not returned in the response, then the webhook will not be created." - https://developers.trello.com/apis/webhooks*
 - The webhook field will be automatically filled when the webhook is successfully created.
 
 ## Requirements
