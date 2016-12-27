@@ -88,17 +88,29 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
     function saveCustomConfig(){
         try{
             global $cfg;
+            $client = new Client();
             $config = TrelloPlugin::getConfig();
             // Initial board
             $initial_board = $config->get('trello_board_id');
+            $initial_webhook = $config->get('trello_webhook_id');
+            $form = $this->getForm();
+            $form->getField('trello_webhook_id')->value;
+            $create_new_webhook = true;
+            if(!empty($form->getField('trello_webhook_id')->value) && $form->getField('trello_webhook_id')->value !== $initial_webhook){
+                // Webhook ID was manually entered and not generated
+                // Check to see if entered webhook id is an already used webhook for this endpoint - verification 
+                // $client->authenticate($form->getField('trello_api_key')->value, $form->getField('trello_api_token')->value, Client::AUTH_URL_CLIENT_ID);
+                // $client->webhooks()->get()
+                $create_new_webhook = false;
+            }
+
             if($this->commitForm()){
                 $config = TrelloPlugin::getConfig();
                 $saved_board = $config->get('trello_board_id');
                 // Create webhook for new board and remove webhook from old board if there is one
                 if($saved_board !== $initial_board || empty($config->get('trello_webhook_id'))){
-                    $client = new Client();
                     $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
-                    if(!empty($config->get('trello_webhook_id'))){
+                    if(!empty($initial_webhook)){
                         // Remove existing webhook
                         try{
                             $client->webhooks()->remove($config->get('trello_webhook_id'));
@@ -109,10 +121,12 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
                             var_dump($e);
                         }
                     }
-                    $trello_webhook_create = $client->webhooks()->create(array("idModel"=>$saved_board,"callbackURL"=>$cfg->getBaseUrl() . "/api/trello","description"=>"OSTicket Plugin"));
-                    if(TrelloConfig::update('trello_webhook_id',$trello_webhook_create['id']) === false){
-                        echo "Failed to save created webhook to database";
-                        return false;
+                    if($create_new_webhook){
+                        $trello_webhook_create = $client->webhooks()->create(array("idModel"=>$saved_board,"callbackURL"=>$cfg->getBaseUrl() . "/api/trello","description"=>"OSTicket Plugin"));
+                        if(TrelloConfig::update('trello_webhook_id',$trello_webhook_create['id']) === false){
+                            echo "Failed to save created webhook to database";
+                            return false;
+                        }
                     }
                 }
 
@@ -160,7 +174,7 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
          'id' => 'trello_list_id',
          'label' => 'Trello Creation List ID',
          'required'=>true,
-         'hint'=>__('When a ticket is created, add card to this list'),
+         'hint'=>__('When a ticket is created, add card to this list in Trello'),
          'configuration' => array(
             'multiselect' => false,
             'validate_choices' => false
@@ -170,7 +184,7 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
             'id'=>'osticket_department_id',
             'label'=>__('Department'),
             'required'=>true,
-            'hint'=>__('Apply this plugin to this departments\' tickets.'),
+            'hint'=>__('When a ticket is created for this department, create the corresponding card in Trello.'),
             'choices'=>Dept::getDepartments(),
             'configuration'=>array(
                 'multiselect' => false
@@ -180,7 +194,7 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
          'id' => 'trello_user_email',
          'label' => 'OSTicket User Email for Trello',
          'required'=>true,
-         'hint'=>__('For Ticket creation in Trello'),
+         'hint'=>__('For Ticket creation in Trello - Just needs to be an email address that has already created at least one ticket in OSTicket. This email address will create all Trello-created tickets.'),
          'configuration' => array(
             'length' => 0
             ),
@@ -189,7 +203,7 @@ class OptionalValidationChoicesWidget extends ChoicesWidget{
          'id' => 'trello_webhook_id',
          'label' => 'Current Trello Webhook',
          'required'=>false,
-         'hint'=>__('Generated and used for webhook removal'),
+         'hint'=>__('Generated and used for webhook removal. However, if you\'ve previously created a webhook for this plugin for this url, you can manually enter it. To see your current webhooks: https://developers.trello.com/sandbox -> Get Webhooks'),
          'configuration' => array(
             'length' => 0
             ),
