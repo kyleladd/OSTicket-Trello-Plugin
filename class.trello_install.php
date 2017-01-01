@@ -1,7 +1,7 @@
 <?php
 
 require_once 'class.setup.php';
-class TrelloInstaller extends \SetupWizard {
+class TrelloInstaller extends SetupWizard {
 	
 	/**
 	 * Loads, checks and installs SQL file.

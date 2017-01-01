@@ -38,59 +38,66 @@ class TrelloApiController extends ApiController {
             $client = new Client();
             $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
             $manager = new Manager($client);
-
+            
             if($json['action']['type']==="createCard"){
-                // $duedate = () ? : "";
-                $duedate = "";
-                $subject = $json['action']['data']['card']['name'];
-                $statusId = array_search($json['action']['data']['listAfter']['name'],$statuses);
-                $card = $manager->getCard($json['action']['data']['card']['id']);
-                $desc = $card->getDescription();
-                
-                if(!empty($desc)){
-                    $message = $desc;
+                $ticket_id = TrelloPlugin::parseTrelloTicketNumber($json['action']['data']['card']['name']);
+                $ticket = null;
+                if($ticket_id != null && $ticket_id != false){
+                    $ticket = Ticket::lookup($ticket_id);
                 }
-                else{
-                    $message = "Card was created in Trello, description is coming soon. The card is located: <a href=\"https://trello.com/c/".$json['action']['data']['card']['shortLink']."\">https://trello.com/c/".$json['action']['data']['card']['shortLink']."</a>";
-                }
-
-                $ticketToBeCreated = array(
-                    "subject" => "***OSTICKETPLUGIN***".$subject,
-                    "message" => $message,
-                    "duedate" => $duedate,
-                    "statusId" => $statusId,
-                    // "source" => "Trello",
-                    "source" => "Other",
-                    "email" => $config->get('trello_user_email')
-                );
-                $ticket = Ticket::create($ticketToBeCreated, $errors, "api", false, false);
-
-                if($ticket == null || !empty($errors)){
-                    $ost->logDebug("DEBUG","Can't create ticket. ". json_encode($json));
-                    $this->response(500, json_encode($errors),
-                        $contentType="application/json");
-                }
-               
-                $entries = $ticket->getThread()->getEntries();
-                $ticket->_answers['subject'] = $ticket->getId() . " - " . $subject;
-
-                foreach (DynamicFormEntryAnswer::objects()
-                    ->filter(array(
-                        'entry__object_id' => $ticket->getId(),
-                        'entry__object_type' => 'T'
-                    )) as $answer
-                ) {
-                    if(mb_strtolower($answer->field->name)
-                        ?: 'field.' . $answer->field->id == "subject"){
-                        $answer->setValue($ticket->getId() . " - " . $subject);
-                        $answer->save();
+                if($ticket == null){
+                    // $duedate = () ? : "";
+                    $duedate = "";
+                    $subject = $json['action']['data']['card']['name'];
+                    $statusId = array_search($json['action']['data']['listAfter']['name'],$statuses);
+                    $card = $manager->getCard($json['action']['data']['card']['id']);
+                    $desc = $card->getDescription();
+                    
+                    if(!empty($desc)){
+                        $message = $desc;
                     }
+                    else{
+                        $message = "Card was created in Trello, description is coming soon. The card is located: <a href=\"https://trello.com/c/".$json['action']['data']['card']['shortLink']."\">https://trello.com/c/".$json['action']['data']['card']['shortLink']."</a>";
+                    }
+
+                    $ticketToBeCreated = array(
+                        "subject" => "***OSTICKETPLUGIN***".$subject,
+                        "message" => $message,
+                        "duedate" => $duedate,
+                        "statusId" => $statusId,
+                        // "source" => "Trello",
+                        "source" => "Other",
+                        "email" => $config->get('trello_user_email')
+                    );
+                    $ticket = Ticket::create($ticketToBeCreated, $errors, "api", false, false);
+
+                    if($ticket == null || !empty($errors)){
+                        $ost->logDebug("DEBUG","Can't create ticket. ". json_encode($json));
+                        $this->response(500, json_encode($errors),
+                            $contentType="application/json");
+                    }
+                   
+                    $entries = $ticket->getThread()->getEntries();
+                    $ticket->_answers['subject'] = $ticket->getId() . " - " . $subject;
+
+                    foreach (DynamicFormEntryAnswer::objects()
+                        ->filter(array(
+                            'entry__object_id' => $ticket->getId(),
+                            'entry__object_type' => 'T'
+                        )) as $answer
+                    ) {
+                        if(mb_strtolower($answer->field->name)
+                            ?: 'field.' . $answer->field->id == "subject"){
+                            $answer->setValue($ticket->getId() . " - " . $subject);
+                            $answer->save();
+                        }
+                    }
+                    foreach ($entries as $entry) {
+                        $entry->title = $ticket->getId() . " - " . $subject;
+                        $entry->save();
+                    }
+                    $client->cards()->setName($json['action']['data']['card']['id'], $ticket->getSubject());
                 }
-                foreach ($entries as $entry) {
-                    $entry->title = $ticket->getId() . " - " . $subject;
-                    $entry->save();
-                }
-                $client->cards()->setName($json['action']['data']['card']['id'], $ticket->getSubject());
             }
             // If it is a card being moved into a new list,
             elseif($json['action']['type']==="updateCard"){
@@ -111,7 +118,11 @@ class TrelloApiController extends ApiController {
                 // If we are moving between lists - Updating the ticket status
                 if(isset($json['action']['data']['listAfter'])){
                     $status = array_search($json['action']['data']['listAfter']['name'],$statuses);
-                    
+                    if($ticket->getStatusId() == $status){
+                        $this->response(200, json_encode("Ticket status does not need to be updated, it is already that status."),
+                            $contentType="application/json");
+                        exit;
+                    }
                     if($ticket->setStatus($status)){
                         $this->response(200, json_encode($ticket),
                         $contentType="application/json");
