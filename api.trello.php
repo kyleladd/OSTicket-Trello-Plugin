@@ -15,6 +15,7 @@ class TrelloApiController extends ApiController {
             global $ost, $cfg;
             $config = TrelloPlugin::getConfig();
             $errors = array();
+            $ticket = null;
             // https://developers.trello.com/apis/webhooks
             // HTTP_X_REAL_IP
             $json = $this->getRequest('json');
@@ -41,15 +42,15 @@ class TrelloApiController extends ApiController {
             
             if($json['action']['type']==="createCard"){
                 $ticket_id = TrelloPlugin::parseTrelloTicketNumber($json['action']['data']['card']['name']);
-                $ticket = null;
-                if($ticket_id != null && $ticket_id != false){
+                if($ticket_id != null){
                     $ticket = Ticket::lookup($ticket_id);
                 }
+                // Ticket creation was initiated from trello
                 if($ticket == null){
                     // $duedate = () ? : "";
                     $duedate = "";
                     $subject = $json['action']['data']['card']['name'];
-                    $statusId = array_search($json['action']['data']['listAfter']['name'],$statuses);
+                    $statusId = array_search($json['action']['data']['list']['name'],$statuses);
                     $card = $manager->getCard($json['action']['data']['card']['id']);
                     $desc = $card->getDescription();
                     
@@ -69,14 +70,13 @@ class TrelloApiController extends ApiController {
                         "source" => "Other",
                         "email" => $config->get('trello_user_email')
                     );
+                    
                     $ticket = Ticket::create($ticketToBeCreated, $errors, "api", false, false);
-
                     if($ticket == null || !empty($errors)){
                         $ost->logDebug("DEBUG","Can't create ticket. ". json_encode($json));
                         $this->response(500, json_encode($errors),
                             $contentType="application/json");
                     }
-                   
                     $entries = $ticket->getThread()->getEntries();
                     $ticket->_answers['subject'] = $ticket->getId() . " - " . $subject;
 
@@ -152,8 +152,8 @@ class TrelloApiController extends ApiController {
         }
         catch(Exception $e){
             $ost->logDebug("DEBUG","Error post from Trello. " . $e->getMessage());
-            var_dump($e);
-            return false;
+            $this->response(500, json_encode($e->getMessage()),
+                        $contentType="application/json");
         }
     }
 }

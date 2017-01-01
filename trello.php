@@ -93,9 +93,8 @@ class TrelloPlugin extends Plugin {
     }
 
     function onModelUpdated($object, $data){
-        //$data is the old data that was before being changed
-        //$object is the object with the updated data
-
+        // $data is the old data that was before being changed
+        // $object is the object with the updated data
         // A Ticket was updated
         if(get_class($object) === "Ticket"){
             $ticket = $object;
@@ -112,11 +111,11 @@ class TrelloPlugin extends Plugin {
                 // Matching the status in OSTicket to a List in Trello
                 $trelloCardId = TrelloPlugin::getTrelloCardId($ticket, $client, $config);
                 $trelloListId = TrelloPlugin::getTrelloListId($ticket->getStatusId(), $client, $config);
-                // Updating the list/status in Trello
-                $client->cards()->setList($trelloCardId, $trelloListId);
-
+                if(!empty($trelloCardId) && !empty($trelloListId)){
+                    // Updating the list/status in Trello
+                    $client->cards()->setList($trelloCardId, $trelloListId);
+                }
             }
-
         }
     }
 
@@ -130,11 +129,14 @@ class TrelloPlugin extends Plugin {
 
     static function parseTrelloTicketNumber($title){
         try{
-            return substr ( $title , 0, strpos ( $title , "-" ) - 1 );
+            $ticketNumber = substr ( $title , 0, strpos ( $title , "-" ) - 1 );
+            if(TrelloPlugin::isInteger($ticketNumber)){
+                return $ticketNumber;
+            }
         }
         catch(Exception $e){
-            return null;
         }
+        return null;
     }
 
     // Add new Routes
@@ -197,5 +199,8 @@ class TrelloPlugin extends Plugin {
         catch(Exception $e){
             return null;
         }
+    }
+    public static function isInteger($input){
+        return (ctype_digit(strval($input)) && !empty($input));
     }
 }
