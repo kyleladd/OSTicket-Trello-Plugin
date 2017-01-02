@@ -130,9 +130,7 @@ class TrelloPlugin extends Plugin {
             $cardId = TrelloPlugin::getTrelloCardId($ticket, $client, $config);
             if(!empty($cardId)){
                 $trelloCard = $manager->getCard($cardId);
-                print_r($trelloCard->getDescription());
                 if($desc !== $trelloCard->getDescription()){
-                    echo "setting desc";
                     $trelloCard->setDescription($desc)->save();
                 }
             }
@@ -158,9 +156,6 @@ class TrelloPlugin extends Plugin {
                 }
             }
         }
-
-
-
     }
 
     static function createTrelloTitle($ticket){
@@ -177,6 +172,19 @@ class TrelloPlugin extends Plugin {
         catch(Exception $e){
         }
         return null;
+    }
+
+    public static function getOSTicketFromTrelloHook($json){
+        $ticket = null;
+        try{
+            $ticket_id = TrelloPlugin::parseTrelloTicketNumber($json['action']['data']['card']['name']);
+            if(!empty($ticket_id)){
+                $ticket = Ticket::lookup($ticket_id);
+            }
+        }
+        catch(Exception $e){
+        }
+        return $ticket;
     }
 
     // Add new Routes

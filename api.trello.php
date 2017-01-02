@@ -137,6 +137,11 @@ class TrelloApiController extends ApiController {
                     $ticket->getThreadEntries()[0]->setBody($json['action']['data']['card']['desc']);
                 }
             }
+            // If comment was added to card
+            elseif($json['action']['type']==="commentCard"){
+                $ticket = TrelloPlugin::getOSTicketFromTrelloHook($json);
+                $ticket->getThread()->addResponse(array("threadId"=>$ticket->getThreadId(), "response"=>$json['action']['data']['text']), $errors);
+            }
             if(!empty($errors)){
                 $ost->logDebug("DEBUG","Errors: ". json_encode($errors));
                 $this->response(500, json_encode($errors),
