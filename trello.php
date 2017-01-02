@@ -117,9 +117,49 @@ class TrelloPlugin extends Plugin {
                 }
             }
         }
+        elseif(get_class($object) === "ThreadEntry"){
+            // Updating the ticket's description/first entry
+            $entry = $object;
+            $desc = $entry->getBody()->display();
+            $config = $this->getConfig();
+            $client = new Client();
+            $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
+            $manager = new Manager($client);
+
+            $ticket = $entry->getThread()->getObject();
+            $cardId = TrelloPlugin::getTrelloCardId($ticket, $client, $config);
+            if(!empty($cardId)){
+                $trelloCard = $manager->getCard($cardId);
+                print_r($trelloCard->getDescription());
+                if($desc !== $trelloCard->getDescription()){
+                    echo "setting desc";
+                    $trelloCard->setDescription($desc)->save();
+                }
+            }
+        }
     }
 
     function onModelCreated($object, $data){
+        if(get_class($object) === "ResponseThreadEntry"){
+            $config = $this->getConfig();
+            $client = new Client();
+            $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
+            // print_r($object->getBody()->getClean());
+            // print_r($object->getBody()->display());
+            $text = $object->getBody()->display();
+            //Get card in trello
+            $ticket = $object->getThread()->getObject(); // gets the ticket, class.thread.php
+            $cardId = TrelloPlugin::getTrelloCardId($ticket, $client, $config);
+            if(!empty($cardId)){
+                $trelloComments = TrelloPlugin::getCardComments($cardId, $client);
+                // if card does not have matching comment, post to trello
+                if(empty(TrelloPlugin::searchArrayByInnerProperty($trelloComments,"data.text",$text))){
+                    $client->cards()->actions()->addComment($cardId,$text);
+                }
+            }
+        }
+
+
 
     }
 
@@ -172,6 +212,17 @@ class TrelloPlugin extends Plugin {
             return null;
         }
     }
+    public static function getCardComments($cardId, $client){
+        try{
+            if(!empty($cardId)){
+                return $client->cards()->actions()->all($cardId,array("filter" => "commentCard"));
+            }
+        }
+        catch(Exception $e){
+            
+        }
+        return null;
+    }
 
     public static function getTrelloCardId($ticket, $client, $config){
         try{
@@ -192,6 +243,34 @@ class TrelloPlugin extends Plugin {
                 if ($value == $struct[$property]) {
                     $item = $struct;
                     break;
+                }
+            }
+            return $item;
+        }
+        catch(Exception $e){
+            return null;
+        }
+    }
+
+    public static function searchArrayByInnerProperty($array,$property,$value){
+        try{
+            if(is_string($property)){
+                $property = explode(".",$property);
+            }
+            $item = null;
+            foreach($array as $struct) {
+                $searchableItem = $struct;
+                for ($i = 0; $i < count($property); $i++) {
+                    if($i === count($property) - 1){
+                        //Check value
+                        if ($value == $searchableItem[$property[$i]]) {
+                            $item = $struct;
+                            break 2; // break the foreach and the for loop
+                        }
+                    }
+                    else{
+                        $searchableItem = $searchableItem[$property[$i]];
+                    }
                 }
             }
             return $item;

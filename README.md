@@ -28,6 +28,50 @@ Support coming soon for unmodified OSTicket v1.9.14, v1.9.15 installs
 ### Events triggered by OSTicket
 - Creating a ticket in OSTicket creates a card in Trello
 
+## Ticket Creation - Fields
+### Action initiated in OSTicket -> Trello
+| Action  | Create |
+| ------------- | ------------- |
+| Title | X |
+| Description | X |
+| Status | X |
+| Due Date |  |
+| Attachment |  |
+
+### Action initiated in Trello -> OSTicket
+| Action  | Create |
+| ------------- | ------------- |
+| Title | X |
+| Description | X |
+| Status | X |
+
+## Syncing
+### Action initiated in OSTicket
+| Action  | Create | Update  | Delete  |
+| ------------- | ------------- | ------------- | ------------- |
+| Ticket | X | NA |  |
+| Title | NA |  |  |
+| Description | NA | X |  |
+| Status | NA | X | NA |
+| Due Date |  |  |  |
+| Public Comment | X |  |  |
+| Internal Comment |  |  |  |
+| Attachment |  |  |  |
+| Tasks |  |  |  |
+
+### Action initiated in Trello
+| Action  | Create | Update  | Delete  |
+| ------------- | ------------- | ------------- | ------------- |
+| Ticket | X | NA |  |
+| Title | NA |  | NA |
+| Description | NA | X | NA |
+| Status | NA | X | NA |
+| Due Date | NA |  |  |
+| Public Comment | X |  |  |
+| Internal Comment |  |  |  |
+| Attachment |  |  |  |
+| Tasks |  |  |  |
+
 ## Additional Configuration
 
 ### Updating ticket status

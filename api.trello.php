@@ -118,19 +118,16 @@ class TrelloApiController extends ApiController {
                 // If we are moving between lists - Updating the ticket status
                 if(isset($json['action']['data']['listAfter'])){
                     $status = array_search($json['action']['data']['listAfter']['name'],$statuses);
-                    if($ticket->getStatusId() == $status){
-                        $this->response(200, json_encode("Ticket status does not need to be updated, it is already that status."),
+                    if(!empty($status) && $ticket->getStatusId() != $status){
+                        if($ticket->setStatus($status)){
+                            $this->response(200, json_encode($ticket),
                             $contentType="application/json");
-                        exit;
-                    }
-                    if($ticket->setStatus($status)){
-                        $this->response(200, json_encode($ticket),
-                        $contentType="application/json");
-                    }
-                    else{
-                        $ost->logDebug("DEBUG","Can't update ticket. ". json_encode($json));
-                        $this->response(500, json_encode("Unable to update ticket status"),
-                        $contentType="application/json");
+                        }
+                        else{
+                            $ost->logDebug("DEBUG","Can't update ticket. ". json_encode($json));
+                            $this->response(500, json_encode("Unable to update ticket status"),
+                            $contentType="application/json");
+                        } 
                     }
                     // If there is a matching OSTicket status, update ticket status to Trello list as status
                 }
