@@ -1,6 +1,12 @@
 # OSTicket Trello Plugin
 The goal of this plugin is to be able to sync your OSTicket tickets with a Trello Board.
 
+## Requirements
+- OSTicket v1.10 - slightly modified [https://github.com/kyleladd/osTicket/commits/OSTicketTrello](https://github.com/kyleladd/osTicket/commits/OSTicketTrello)
+	- Support coming soon for unmodified OSTicket v1.9.14, v1.9.15 installs
+- Guzzle's Requirements: V6 (see composer.json) [http://docs.guzzlephp.org/en/stable/overview.html](http://docs.guzzlephp.org/en/stable/overview.html)
+  - PHP 5.5
+
 ## Installation
 **Note**: For now, this plugin depends on OSTicket having an api which has not been merged in yet (PR [#2947](https://github.com/osTicket/osTicket/pull/2947)) as well as a PUT endpoint that I created. To see the modifications: [https://github.com/kyleladd/osTicket/commits/OSTicketTrello](https://github.com/kyleladd/osTicket/commits/OSTicketTrello)
 
@@ -12,12 +18,16 @@ The goal of this plugin is to be able to sync your OSTicket tickets with a Trell
 - Configure the plugin via the plugin's form. *Note: This must be completed after the plugin is enabled because Trello verifies the url is a 200 status code in order for the webhook to be created. Enabling the plugin first allows the plugin/OSTicket to answer the request with a 200 status code when configuring the plugin. When enabled, the plugin hooks into the url dispatcher and creates the api endpoints for Trello within OSTicket. "The provided callbackURL must be a valid URL during the creation of the webhook. We run a quick HTTP HEAD request on the URL, and if a 200 status code is not returned in the response, then the webhook will not be created." - https://developers.trello.com/apis/webhooks*
 - The webhook field will be automatically filled when the webhook is successfully created.
 
-## Requirements
-- OSTicket v1.10 [https://github.com/kyleladd/osTicket/commits/OSTicketTrello](https://github.com/kyleladd/osTicket/commits/OSTicketTrello)
-- Guzzle's Requirements: V6 (see composer.json) [http://docs.guzzlephp.org/en/stable/overview.html](http://docs.guzzlephp.org/en/stable/overview.html)
-  - PHP 5.5
-  
-Support coming soon for unmodified OSTicket v1.9.14, v1.9.15 installs
+## Additional Configuration
+
+### Updating ticket status
+ Updating the ticket status is done by matching the name of the list (in Trello) to the name of the status (in OSTicket)
+
+#### Adding ticket statuses in OSTicket
+Admin Panel->Manage->Lists->Ticket Statuses->Add New Item
+
+- **Value**: Match the name of the list in Trello
+- **Item Properties**: Set the state of the ticket when it is (this status - OSTicket)/(in this list - Trello)
 
 ## Functionality
 ### Events triggered by Trello
@@ -71,14 +81,3 @@ Support coming soon for unmodified OSTicket v1.9.14, v1.9.15 installs
 | Internal Comment |  |  |  |
 | Attachment |  |  |  |
 | Tasks |  |  |  |
-
-## Additional Configuration
-
-### Updating ticket status
- Updating the ticket status is done by matching the name of the list (in Trello) to the name of the status (in OSTicket)
-
-#### Adding ticket statuses in OSTicket
-Admin Panel->Manage->Lists->Ticket Statuses->Add New Item
-
-- **Value**: Match the name of the list in Trello
-- **Item Properties**: Set the state of the ticket when it is (this status - OSTicket)/(in this list - Trello)
