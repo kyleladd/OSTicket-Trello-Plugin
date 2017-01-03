@@ -117,42 +117,75 @@ class TrelloPlugin extends Plugin {
                 }
             }
         }
-        elseif(get_class($object) === "ThreadEntry"){
-            // Updating the ticket's description/first entry
-            $entry = $object;
-            $desc = $entry->getBody()->display();
-            $config = $this->getConfig();
-            $client = new Client();
-            $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
-            $manager = new Manager($client);
-
-            $ticket = $entry->getThread()->getObject();
-            $cardId = TrelloPlugin::getTrelloCardId($ticket, $client, $config);
-            if(!empty($cardId)){
-                $trelloCard = $manager->getCard($cardId);
-                if($desc !== $trelloCard->getDescription()){
-                    $trelloCard->setDescription($desc)->save();
-                }
-            }
-        }
     }
 
     function onModelCreated($object, $data){
         if(get_class($object) === "ResponseThreadEntry"){
+            // Creating a new response to a ticket
+            $response = $object;
             $config = $this->getConfig();
             $client = new Client();
             $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
-            // print_r($object->getBody()->getClean());
-            // print_r($object->getBody()->display());
-            $text = $object->getBody()->display();
+            // print_r($response->getBody()->getClean());
+            // print_r($response->getBody()->display());
+            $text = Format::htmldecode($response->getBody()->getClean());
             //Get card in trello
-            $ticket = $object->getThread()->getObject(); // gets the ticket, class.thread.php
+            $ticket = $response->getThread()->getObject(); // gets the ticket, class.thread.php
             $cardId = TrelloPlugin::getTrelloCardId($ticket, $client, $config);
             if(!empty($cardId)){
                 $trelloComments = TrelloPlugin::getCardComments($cardId, $client);
                 // if card does not have matching comment, post to trello
-                if(empty(TrelloPlugin::searchArrayByInnerProperty($trelloComments,"data.text",$text))){
-                    $client->cards()->actions()->addComment($cardId,$text);
+                if(empty(TrelloPlugin::searchArrayByInnerProperty($trelloComments, "data.text", $text))){
+                    $client->cards()->actions()->addComment($cardId, $text);
+                }
+            }
+        }
+        elseif(get_class($object) === "ThreadEntry"){
+            // Updating a response or the ticket's description
+            $entry = $object;
+            $config = $this->getConfig();
+            $client = new Client();
+            $client->authenticate($config->get('trello_api_key'), $config->get('trello_api_token'), Client::AUTH_URL_CLIENT_ID);
+            $manager = new Manager($client);
+            $ticket = $entry->getThread()->getObject();
+            $cardId = TrelloPlugin::getTrelloCardId($ticket, $client, $config);
+            if(!empty($cardId)){
+                $trelloComments = TrelloPlugin::getCardComments($cardId, $client);
+                // Updating the ticket's description/first entry - nope, this is any entry
+                if($entry->getType() === "M"){
+                    $desc = Format::htmldecode($entry->getBody()->getClean());
+                    if(!empty($cardId)){
+                        $trelloCard = $manager->getCard($cardId);
+                        if($desc !== $trelloCard->getDescription()){
+                            $trelloCard->setDescription($desc)->save();
+                        }
+                    }
+                }
+                elseif($entry->getType() === "R"){
+                    $text = Format::htmldecode($entry->getBody()->getClean());
+                    // Updating a response
+                    // if this is a new reply
+                    if(empty($entry->getPid())){
+                        // if card does not have matching comment, post to trello
+                        if(empty(TrelloPlugin::searchArrayByInnerProperty($trelloComments, "data.text", $text))){
+                            $client->cards()->actions()->addComment($cardId, $text);
+                        }
+                    }
+                    else{
+                        // It is an edit to a reply
+                        $originalEntry = ResponseThreadEntry::lookup($entry->getPid());
+                        $originalText = Format::htmldecode($originalEntry->getBody()->getClean());
+                        $originalComment = TrelloPlugin::searchArrayByInnerProperty($trelloComments, "data.text", $originalText);
+                        //update comment
+                        if(!empty($originalComment)){
+                            // $client->cards()->actions()->removeComment($cardId, $originalComment['id']);
+                            $client->actions()->setText($originalComment['id'], $text);
+                        }
+                        else{
+                            //add new comment
+                            $client->cards()->actions()->addComment($cardId, $text);
+                        }
+                    }
                 }
             }
         }
